@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#d94f8a" />
+<title>ネオルコーチ</title>
+<style>
+  :root{
+    --bg:#fff7fb;
+    --card:#ffffff;
+    --text:#2e2430;
+    --muted:#7f6f7b;
+    --accent:#d94f8a;
+    --accent2:#f5d3e2;
+    --ok:#4e9a72;
+    --line:#ead8e1;
+    --shadow:0 10px 30px rgba(70,30,50,.10);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;
+    background:linear-gradient(180deg,#fff7fb 0%,#fff 100%);
+    color:var(--text);
+    min-height:100vh;
+  }
+  button,select,input{font:inherit}
+  .wrap{max-width:600px;margin:0 auto;padding:18px 15px 42px}
+  h1{font-size:29px;margin:8px 0 4px}
+  h2{font-size:20px;margin:0 0 12px}
+  .lead{margin:0 0 16px;color:var(--muted);line-height:1.6}
+  .date{font-weight:700;color:var(--accent);margin-bottom:14px}
+  .card{
+    background:var(--card);
+    border-radius:22px;
+    box-shadow:var(--shadow);
+    padding:18px;
+    margin:14px 0;
+  }
+  .hero{
+    background:linear-gradient(135deg,#fff 0%,#ffe9f2 100%);
+  }
+  .focus{
+    font-size:23px;
+    font-weight:800;
+    margin:5px 0 7px;
+  }
+  .muted{color:var(--muted);line-height:1.55}
+  .row{display:flex;gap:10px}
+  .row>*{flex:1}
+  .stat{
+    text-align:center;
+    padding:11px 8px;
+    border-radius:16px;
+    background:#fff8fb;
+  }
+  .stat strong{display:block;font-size:24px;color:var(--accent)}
+  .checklist{display:grid;gap:10px}
+  .check{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:13px;
+    background:white;
+  }
+  .check.done{background:#edf8f2;border-color:#cae8d7}
+  .check input{width:22px;height:22px;margin-top:2px;accent-color:var(--ok)}
+  .check-title{font-weight:800;margin-bottom:3px}
+  .check-desc{font-size:14px;color:var(--muted);line-height:1.45}
+  .task{
+    display:flex;
+    gap:14px;
+    align-items:center;
+  }
+  .icon{
+    width:56px;height:56px;border-radius:18px;
+    background:var(--accent2);
+    display:grid;place-items:center;
+    font-size:27px;
+    flex:0 0 auto;
+  }
+  .task h2{margin:0 0 4px}
+  .task p{margin:0;color:var(--muted);line-height:1.5}
+  .timer{
+    text-align:center;
+    font-size:42px;
+    font-variant-numeric:tabular-nums;
+    font-weight:800;
+    margin:14px 0 2px;
+  }
+  .primary,.secondary{
+    width:100%;
+    border-radius:15px;
+    padding:14px 16px;
+    font-weight:800;
+    margin-top:10px;
+  }
+  .primary{border:0;background:var(--accent);color:white}
+  .secondary{border:1px solid var(--line);background:white;color:var(--text)}
+  label{display:block;font-weight:800;margin:12px 0 7px}
+  select{
+    width:100%;
+    padding:12px;
+    border:1px solid var(--line);
+    border-radius:12px;
+    background:white;
+  }
+  .small{font-size:13px;color:var(--muted);line-height:1.5}
+  .next{font-weight:800;color:var(--accent);margin-top:8px}
+  .badge{
+    display:inline-block;
+    background:var(--accent2);
+    color:#7b2f52;
+    padding:5px 9px;
+    border-radius:999px;
+    font-size:13px;
+    font-weight:800;
+  }
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>ネオルコーチ</h1>
+  <p class="lead">時間を増やさず、若く見える動きとノースリーブ対策を毎日少しずつ。</p>
+  <div class="date" id="todayDate"></div>
+
+  <div class="card hero">
+    <span class="badge" id="dayBadge"></span>
+    <div class="focus" id="dayFocus"></div>
+    <div class="muted" id="dayMessage"></div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <div class="stat"><strong id="todayCount">0</strong>今日完了</div>
+      <div class="stat"><strong id="streak">0</strong>連続日</div>
+      <div class="stat"><strong id="totalCount">0</strong>累計</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>今日のチェック</h2>
+    <div class="checklist" id="checklist"></div>
+  </div>
+
+  <div class="card" id="taskCard">
+    <div class="task">
+      <div class="icon" id="taskIcon">🧘</div>
+      <div>
+        <h2 id="taskTitle">床から立つ・座る</h2>
+        <p id="taskText">床からゆっくり5回。手は使ってOK。</p>
+      </div>
+    </div>
+    <div class="timer" id="timer">01:00</div>
+    <button class="primary" id="startBtn">1分スタート</button>
+    <button class="secondary" id="doneBtn">今すぐ完了にする</button>
+    <button class="secondary" id="nextTaskBtn">別の動きに変える</button>
+  </div>
+
+  <div class="card">
+    <h2>促し設定</h2>
+    <label for="interval">間隔</label>
+    <select id="interval">
+      <option value="30">30分ごと</option>
+      <option value="45">45分ごと</option>
+      <option value="60" selected>60分ごと</option>
+      <option value="90">90分ごと</option>
+      <option value="120">120分ごと</option>
+    </select>
+
+    <label for="yogaDay">ヨガの曜日</label>
+    <select id="yogaDay">
+      <option value="0">日曜日</option>
+      <option value="1">月曜日</option>
+      <option value="2">火曜日</option>
+      <option value="3">水曜日</option>
+      <option value="4">木曜日</option>
+      <option value="5">金曜日</option>
+      <option value="6">土曜日</option>
+    </select>
+
+    <button class="primary" id="notifyBtn">通知をオンにする</button>
+    <div class="next" id="nextReminder">次の促し：未設定</div>
+    <p class="small">iPhoneではSafariで開き、「ホーム画面に追加」にすると使いやすいです。ブラウザを閉じると通知が止まる場合があります。</p>
+  </div>
+</div>
+
+<script>
+const baseTasks = [
+  {id:"floor", icon:"🧘", title:"床から立つ・座る", text:"床からゆっくり5回。手は使ってOK。"},
+  {id:"hip", icon:"🦵", title:"腸腰筋ストレッチ", text:"片脚を後ろへ引き、腰を反らさず左右30秒。"},
+  {id:"pelvis", icon:"↕️", title:"骨盤を前後に動かす", text:"椅子に座ったまま、骨盤を前後へゆっくり10回。"},
+  {id:"march", icon:"🚶‍♀️", title:"その場で膝上げ", text:"姿勢を長く保ち、左右交互に20回。"},
+  {id:"squat", icon:"🏋️‍♀️", title:"スクワット", text:"手を使わずゆっくり10回。膝とつま先は同じ向き。"},
+  {id:"wall", icon:"🧱", title:"壁立ち", text:"前ももを固めず、みぞおちを軽く引いて1分。"},
+  {id:"arms", icon:"💪", title:"二の腕キックバック", text:"肘を固定し、腕を後ろへ15回。最後に1秒締める。"},
+  {id:"face", icon:"🙂", title:"顔ダンス", text:"今日は短くてもOK。姿勢を崩さず1セット。"}
+];
+
+const weekly = {
+  0:{focus:"回復と姿勢の日", message:"無理に追い込まず、壁立ちと股関節を軽く整える。", ids:["wall","hip","face"]},
+  1:{focus:"床から軽く立つ日", message:"若く見える動作の中心。床からの立ち座りを丁寧に。", ids:["floor","pelvis","wall"]},
+  2:{focus:"ノースリーブ対策の日", message:"二の腕と姿勢をまとめて整える。", ids:["arms","wall","face"]},
+  3:{focus:"骨盤を動かす日", message:"座りすぎで固まった骨盤まわりを1分ずつ解放。", ids:["pelvis","hip","march"]},
+  4:{focus:"脚とお尻の日", message:"細く見えるだけでなく、軽く動ける脚を保つ。", ids:["squat","floor","hip"]},
+  5:{focus:"二の腕と背中の日", message:"週末のノースリーブに向けて二の腕を締める。", ids:["arms","wall","face"]},
+  6:{focus:"全身リセットの日", message:"短時間で全身を動かし、固まりを翌週へ持ち越さない。", ids:["floor","squat","pelvis"]}
+};
+
+let currentTaskIndex = Number(localStorage.getItem("currentTaskIndex") || 0);
+let seconds = 60;
+let timerId = null;
+let reminderId = null;
+let nextReminderAt = null;
+
+const todayKey = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+};
+
+function getYogaDay(){
+  return Number(localStorage.getItem("yogaDay") ?? 0);
+}
+
+function todaysPlan(){
+  const day = new Date().getDay();
+  if(day === getYogaDay()){
+    return {
+      focus:"ヨガの日",
+      message:"ヨガが主役。追加は壁立ちか顔ダンスだけで十分。",
+      ids:["wall","face","hip"]
+    };
+  }
+  return weekly[day];
+}
+
+function plannedTasks(){
+  const plan = todaysPlan();
+  return plan.ids.map(id => baseTasks.find(t => t.id === id));
+}
+
+function renderHeader(){
+  const d = new Date();
+  const weekdays = ["日","月","火","水","木","金","土"];
+  todayDate.textContent = `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日（${weekdays[d.getDay()]}）`;
+  const plan = todaysPlan();
+  dayBadge.textContent = d.getDay() === getYogaDay() ? "ヨガDAY" : "今日の重点";
+  dayFocus.textContent = plan.focus;
+  dayMessage.textContent = plan.message;
+}
+
+function getData(){
+  return JSON.parse(localStorage.getItem("coachStats") || '{"total":0,"days":{},"checks":{}}');
+}
+function saveData(data){
+  localStorage.setItem("coachStats", JSON.stringify(data));
+}
+
+function loadStats(){
+  const data = getData();
+  const todayChecks = data.checks[todayKey()] || {};
+  const count = Object.values(todayChecks).filter(Boolean).length;
+  todayCount.textContent = count;
+  totalCount.textContent = data.total || 0;
+
+  let streakCount = 0;
+  const d = new Date();
+  while(true){
+    const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+    const checks = data.checks[key] || {};
+    if(Object.values(checks).some(Boolean)){
+      streakCount++;
+      d.setDate(d.getDate()-1);
+    } else break;
+  }
+  streak.textContent = streakCount;
+}
+
+function renderChecklist(){
+  checklist.innerHTML = "";
+  const data = getData();
+  const key = todayKey();
+  data.checks[key] = data.checks[key] || {};
+  plannedTasks().forEach(task => {
+    const item = document.createElement("label");
+    item.className = "check" + (data.checks[key][task.id] ? " done" : "");
+    item.innerHTML = `
+      <input type="checkbox" ${data.checks[key][task.id] ? "checked" : ""}>
+      <div>
+        <div class="check-title">${task.icon} ${task.title}</div>
+        <div class="check-desc">${task.text}</div>
+      </div>`;
+    const box = item.querySelector("input");
+    box.addEventListener("change", () => {
+      const d = getData();
+      d.checks[key] = d.checks[key] || {};
+      const wasDone = !!d.checks[key][task.id];
+      d.checks[key][task.id] = box.checked;
+      if(!wasDone && box.checked) d.total = (d.total || 0) + 1;
+      if(wasDone && !box.checked) d.total = Math.max(0,(d.total || 0) - 1);
+      saveData(d);
+      renderChecklist();
+      loadStats();
+    });
+    checklist.appendChild(item);
+  });
+}
+
+function currentTasks(){
+  return plannedTasks();
+}
+
+function renderTask(){
+  const tasks = currentTasks();
+  if(currentTaskIndex >= tasks.length) currentTaskIndex = 0;
+  const t = tasks[currentTaskIndex];
+  taskIcon.textContent = t.icon;
+  taskTitle.textContent = t.title;
+  taskText.textContent = t.text;
+  localStorage.setItem("currentTaskIndex", currentTaskIndex);
+}
+
+function formatTime(s){
+  const m = String(Math.floor(s/60)).padStart(2,"0");
+  const sec = String(s%60).padStart(2,"0");
+  return `${m}:${sec}`;
+}
+
+function completeCurrentTask(){
+  const tasks = currentTasks();
+  const task = tasks[currentTaskIndex];
+  const data = getData();
+  const key = todayKey();
+  data.checks[key] = data.checks[key] || {};
+  if(!data.checks[key][task.id]){
+    data.checks[key][task.id] = true;
+    data.total = (data.total || 0) + 1;
+  }
+  saveData(data);
+  taskCard.classList.add("done");
+  startBtn.textContent = "完了！";
+  renderChecklist();
+  loadStats();
+  setTimeout(()=>{
+    taskCard.classList.remove("done");
+    currentTaskIndex = (currentTaskIndex + 1) % tasks.length;
+    renderTask();
+    seconds = 60;
+    timer.textContent = formatTime(seconds);
+    startBtn.textContent = "1分スタート";
+  },800);
+}
+
+startBtn.addEventListener("click", ()=>{
+  if(timerId) return;
+  startBtn.textContent = "実行中…";
+  timerId = setInterval(()=>{
+    seconds--;
+    timer.textContent = formatTime(seconds);
+    if(seconds <= 0){
+      clearInterval(timerId);
+      timerId = null;
+      completeCurrentTask();
+    }
+  },1000);
+});
+
+doneBtn.addEventListener("click", ()=>{
+  if(timerId){clearInterval(timerId);timerId=null;}
+  completeCurrentTask();
+});
+
+nextTaskBtn.addEventListener("click", ()=>{
+  currentTaskIndex = (currentTaskIndex + 1) % currentTasks().length;
+  renderTask();
+});
+
+function scheduleReminder(){
+  if(reminderId) clearInterval(reminderId);
+  const mins = Number(interval.value);
+  localStorage.setItem("interval", mins);
+  nextReminderAt = Date.now() + mins*60*1000;
+  updateNextReminder();
+  reminderId = setInterval(()=>{
+    showReminder();
+    nextReminderAt = Date.now() + mins*60*1000;
+    updateNextReminder();
+  }, mins*60*1000);
+}
+
+function updateNextReminder(){
+  if(!nextReminderAt){
+    nextReminder.textContent = "次の促し：未設定";
+    return;
+  }
+  const d = new Date(nextReminderAt);
+  nextReminder.textContent = "次の促し：" + d.toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit"});
+}
+
+function showReminder(){
+  currentTaskIndex = (currentTaskIndex + 1) % currentTasks().length;
+  renderTask();
+  const task = currentTasks()[currentTaskIndex];
+  if("Notification" in window && Notification.permission === "granted"){
+    new Notification("ネオルコーチ：1分だけ", {body:`${task.title}：${task.text}`});
+  }else{
+    alert(`1分だけ：${task.title}`);
+  }
+}
+
+notifyBtn.addEventListener("click", async ()=>{
+  if("Notification" in window){
+    const permission = await Notification.requestPermission();
+    notifyBtn.textContent = permission === "granted" ? "通知オン" : "画面内リマインドを開始";
+  }else{
+    notifyBtn.textContent = "画面内リマインドを開始";
+  }
+  scheduleReminder();
+});
+
+yogaDay.addEventListener("change", ()=>{
+  localStorage.setItem("yogaDay", yogaDay.value);
+  currentTaskIndex = 0;
+  renderHeader();
+  renderChecklist();
+  renderTask();
+});
+
+const savedInterval = localStorage.getItem("interval");
+if(savedInterval) interval.value = savedInterval;
+yogaDay.value = String(getYogaDay());
+
+renderHeader();
+renderChecklist();
+renderTask();
+loadStats();
+timer.textContent = formatTime(seconds);
+</script>
+</body>
+</html>
