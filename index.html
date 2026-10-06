@@ -49,7 +49,7 @@
   <div id="exerciseList"></div>
 
   <div class="card"><div class="small">
-    タイマーが0になると自動で完了になります。途中で止めたいときは「一時停止」、最初からやり直すときは「リセット」を使ってください。完了記録はこの端末内に保存されます。
+    スタートすると、各エクササイズではBGMが、「なのいうえお」ではテンポ音がタイマーと一緒に流れます。タイマーが0になると自動で完了します。途中で止めたいときは「一時停止」、最初からやり直すときは「リセット」を使ってください。完了記録はこの端末内に保存されます。
   </div></div>
 </div>
 
@@ -63,7 +63,7 @@ const exercises=[
 {id:"forehead",name:"おでこのエクササイズ",seconds:300},
 {id:"nose",name:"鼻の横のエクササイズ",seconds:300},
 {id:"eye",name:"目の下のエクササイズ",seconds:300},
-{id:"nano",name:"なのいうえおあお",seconds:300}
+{id:"nano",name:"なのいうえお",seconds:300}
 ];
 const timers={},KEY="neoruFaceCoachV1";
 const dayKey=(d=new Date())=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -97,22 +97,61 @@ function render(){
     document.getElementById("reset-"+ex.id).onclick=()=>reset(ex);
   })
 }
+let audioCtx=null, audioMaster=null, audioNodes=[], audioSchedule=null;
+function ensureAudio(){
+ const A=window.AudioContext||window.webkitAudioContext;
+ if(!A)return null;
+ if(!audioCtx) audioCtx=new A();
+ if(audioCtx.state==="suspended") audioCtx.resume();
+ return audioCtx;
+}
+function stopAudio(){
+ if(audioSchedule){clearInterval(audioSchedule);audioSchedule=null}
+ audioNodes.forEach(n=>{try{n.stop()}catch(e){};try{n.disconnect()}catch(e){}}); audioNodes=[];
+ if(audioMaster){try{audioMaster.disconnect()}catch(e){};audioMaster=null}
+}
+function tone(freq,start,dur=.16,vol=.035,type="sine"){
+ const c=audioCtx,o=c.createOscillator(),g=c.createGain();
+ o.type=type;o.frequency.value=freq;o.connect(g);g.connect(audioMaster);
+ g.gain.setValueAtTime(.0001,start);g.gain.exponentialRampToValueAtTime(vol,start+.015);g.gain.exponentialRampToValueAtTime(.0001,start+dur);
+ o.start(start);o.stop(start+dur+.02);audioNodes.push(o);
+}
+function startBgm(){
+ stopAudio();const c=ensureAudio();if(!c)return;
+ audioMaster=c.createGain();audioMaster.gain.value=.65;audioMaster.connect(c.destination);
+ // Gentle original loop: soft major-7 / add9 arpeggios, no vocals.
+ const chords=[[261.63,329.63,392.00,493.88],[220.00,261.63,329.63,392.00],[174.61,220.00,261.63,329.63],[196.00,246.94,293.66,392.00]];
+ const schedule=(base)=>{for(let bar=0;bar<4;bar++){const ch=chords[bar];for(let i=0;i<8;i++){tone(ch[i%4],base+bar*4+i*.5,.38,.026); if(i===0)tone(ch[0]/2,base+bar*4,.8,.018)}}};
+ let next=c.currentTime+.05;schedule(next);next+=16;
+ audioSchedule=setInterval(()=>{if(c.currentTime>next-5){schedule(next);next+=16}},1000);
+}
+function startTempo(){
+ stopAudio();const c=ensureAudio();if(!c)return;
+ audioMaster=c.createGain();audioMaster.gain.value=.8;audioMaster.connect(c.destination);
+ // 6 beats, about 0.53 sec apart; then about 2 sec before the next set.
+ const cycle=4.65, beat=.53;
+ const schedule=(base)=>{for(let set=0;set<4;set++){let b=base+set*cycle;for(let i=0;i<6;i++)tone(i===5?880:660,b+i*beat,.10,i===5?.05:.035,"sine")}};
+ let next=c.currentTime+.05;schedule(next);next+=cycle*4;
+ audioSchedule=setInterval(()=>{if(c.currentTime>next-5){schedule(next);next+=cycle*4}},1000);
+}
+function startExerciseAudio(ex){ if(ex.id==="nano")startTempo(); else startBgm() }
 function toggle(ex){
  const s=timers[ex.id],b=document.getElementById("start-"+ex.id),st=document.getElementById("status-"+ex.id);
- if(s.running){clearInterval(s.interval);s.running=false;b.textContent="再開";st.textContent="一時停止中";return}
+ if(s.running){clearInterval(s.interval);s.running=false;stopAudio();b.textContent="再開";st.textContent="一時停止中";return}
  if(s.remaining<=0) reset(ex);
- s.running=true;b.textContent="一時停止";st.textContent="実行中";
+ s.running=true;b.textContent="一時停止";st.textContent="実行中";startExerciseAudio(ex);
  s.interval=setInterval(()=>{s.remaining--;document.getElementById("timer-"+ex.id).textContent=fmt(s.remaining);
  if(s.remaining<=0){clearInterval(s.interval);s.running=false;finish(ex)}},1000)
 }
 function finish(ex){
+ stopAudio();
  document.getElementById("start-"+ex.id).textContent="もう一度";
  document.getElementById("status-"+ex.id).textContent="完了";
  document.getElementById("card-"+ex.id).classList.add("done"); setDone(ex.id,true);
  try{const A=window.AudioContext||window.webkitAudioContext;if(A){const c=new A(),o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.setValueAtTime(.12,c.currentTime);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.5);o.start();o.stop(c.currentTime+.5)}}catch(e){}
 }
 function reset(ex){
- const s=timers[ex.id]; if(s.interval)clearInterval(s.interval); s.running=false;s.remaining=ex.seconds;
+ const s=timers[ex.id]; if(s.running)stopAudio(); if(s.interval)clearInterval(s.interval); s.running=false;s.remaining=ex.seconds;
  document.getElementById("timer-"+ex.id).textContent=fmt(ex.seconds);
  document.getElementById("start-"+ex.id).textContent="スタート";
  document.getElementById("status-"+ex.id).textContent="";
