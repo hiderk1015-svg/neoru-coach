@@ -96,7 +96,7 @@ function renderDate(){
 function render(){
   const done=(data().days[dayKey()]||{}),list=document.getElementById("exerciseList");
   list.innerHTML="";
-  exercises.forEach(ex=>{
+  (activeMenu==="face"?exercises:postureExercises).forEach(ex=>{
     timers[ex.id]={remaining:ex.seconds,running:false,interval:null};
     const c=document.createElement("div");
     c.className="card exercise"+(done[ex.id]?" done":""); c.id="card-"+ex.id;
